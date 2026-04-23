@@ -1,39 +1,38 @@
-name: Sample PR Builder for SamplePlugin
+name: Build ProvokeCounter
 
-on:
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
 
   build:
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     env:
-      Solution_Name: SamplePlugin
+      Solution_Name: ProvokeCounter
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-    - name: Install .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: 9.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
 
-    - name: Download Dalamud
-      run: |
-        Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
-        Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
+      - name: Download Dalamud
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
 
-    - name: Store artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: SamplePlugin
-        path: .\SamplePlugin\bin\x64\Release\SamplePlugin\*
-        if-no-files-found: error
-        retention-days: 1
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
 
+      - name: Store artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ProvokeCounter
+          path: .\ProvokeCounter\bin\x64\Release\ProvokeCounter\*
+          if-no-files-found: error

@@ -16,7 +16,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        Log.Information($"ProvokeCounter loaded.");
+        Log.Information("ProvokeCounter loaded.");
     }
 
     public void Dispose()
