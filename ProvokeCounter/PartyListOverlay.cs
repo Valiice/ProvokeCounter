@@ -70,7 +70,7 @@ public sealed class PartyListOverlay : IDisposable
         {
             var member = partyList[i];
             if (member == null) continue;
-            if (!tracker.HasCount(member.EntityId)) continue;
+            if (!tracker.TryGetCount(member.EntityId, out var count)) continue;
 
             var slotNodeIndex = MemberNodeIndices[i];
             if (slotNodeIndex >= addon->UldManager.NodeListCount) continue;
@@ -91,7 +91,7 @@ public sealed class PartyListOverlay : IDisposable
             var nodeX = jobIconNode->ScreenX;
             var nodeY = jobIconNode->ScreenY;
 
-            var badgeText = tracker.GetCount(member.EntityId).ToString();
+            var badgeText = count.ToString();
             var textSize = ImGui.CalcTextSize(badgeText);
             var padding = new Vector2(3f * scale, 1f * scale);
             var badgeSize = textSize + padding * 2f;

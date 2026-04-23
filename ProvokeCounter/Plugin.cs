@@ -66,5 +66,5 @@ public sealed class Plugin : IDalamudPlugin
             : "[ProvokeCounter] Overlay hidden.");
     }
 
-    private void OnTerritoryChanged(ushort territory) => tracker.Reset();
+    private void OnTerritoryChanged(ushort _) => tracker.Reset();
 }

@@ -17,5 +17,8 @@ public sealed class ProvokeTracker
 
     public bool HasCount(uint objectId) => counts.ContainsKey(objectId);
 
+    public bool TryGetCount(uint objectId, out int count) =>
+        counts.TryGetValue(objectId, out count);
+
     public void Reset() => counts.Clear();
 }

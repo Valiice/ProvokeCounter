@@ -30,6 +30,11 @@ public sealed class ActionEffectHook : IDisposable
         this.partyList = partyList;
         gameInterop.InitializeFromAttributes(this);
         hook?.Enable();
+
+        if (hook == null)
+            Plugin.Log.Warning("[ProvokeCounter] ReceiveActionEffect signature not found — Provoke detection is disabled. Update the signature after a game patch.");
+        else
+            Plugin.Log.Information("[ProvokeCounter] ActionEffectHook enabled.");
     }
 
     private void OnReceiveActionEffect(
