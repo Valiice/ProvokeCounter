@@ -20,9 +20,11 @@ public sealed class ActionEffectHook : IDisposable
         this.tracker = tracker;
         this.partyList = partyList;
 
+        var address = ActionEffectHandler.Addresses.Receive.Value;
+        Plugin.Log.Information($"[ProvokeCounter] Hooking ReceiveActionEffect at 0x{address:X}");
+
         hook = gameInterop.HookFromAddress<ActionEffectHandler.Delegates.Receive>(
-            ActionEffectHandler.Addresses.Receive.Value,
-            OnReceiveActionEffect);
+            address, OnReceiveActionEffect);
         hook.Enable();
 
         Plugin.Log.Information("[ProvokeCounter] ActionEffectHook enabled.");
@@ -38,12 +40,9 @@ public sealed class ActionEffectHook : IDisposable
     {
         hook.Original(casterEntityId, caster, targetPos, header, effects, targetEntityIds);
 
-        if (header->ActionId != ProvokeActionId)
-        {
-            // Uncomment to log ALL incoming actions for debugging:
-            // Plugin.Log.Debug($"[ProvokeCounter] Action {header->ActionId} from {casterEntityId}");
-            return;
-        }
+        Plugin.Log.Debug($"[ProvokeCounter] Hook fired: action {header->ActionId} from {casterEntityId}");
+
+        if (header->ActionId != ProvokeActionId) return;
 
         Plugin.Log.Information($"[ProvokeCounter] Provoke detected from entity {casterEntityId}");
         Plugin.Log.Information($"[ProvokeCounter] Party members ({partyList.Length}): {string.Join(", ", System.Linq.Enumerable.Select(partyList, m => $"{m.Name}={m.EntityId}"))}");
