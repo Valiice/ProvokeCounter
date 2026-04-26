@@ -39,7 +39,6 @@ public sealed class ActionEffectHook : IDisposable
         if (header->ActionId != ProvokeActionId) return;
 
         tracker.Increment(casterEntityId);
-        Plugin.Log.Debug($"[ProvokeCounter] Provoke from {casterEntityId}, count: {tracker.GetCount(casterEntityId)}");
     }
 
     public void Dispose()
