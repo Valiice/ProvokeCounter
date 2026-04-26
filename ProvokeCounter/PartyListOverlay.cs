@@ -2,13 +2,14 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace ProvokeCounter;
 
 public sealed class PartyListOverlay : IDisposable
 {
-    // Component node indices within _PartyList for each member slot (slot 0 = local player).
+    // Component node indices within _PartyList for each UI slot (slot 0 = top).
     // Verify with /xldev -> Addon Inspector -> _PartyList if badges appear at wrong positions.
     private static readonly int[] MemberNodeIndices = [4, 5, 6, 7, 8, 9, 10, 11];
 
@@ -21,14 +22,12 @@ public sealed class PartyListOverlay : IDisposable
     private const uint BadgeTextColor   = 0xFFFFFFFF; // white, fully opaque
 
     private readonly IGameGui gameGui;
-    private readonly IPartyList partyList;
     private readonly ProvokeTracker tracker;
     private readonly Configuration config;
 
-    public PartyListOverlay(IGameGui gameGui, IPartyList partyList, ProvokeTracker tracker, Configuration config)
+    public PartyListOverlay(IGameGui gameGui, ProvokeTracker tracker, Configuration config)
     {
         this.gameGui = gameGui;
-        this.partyList = partyList;
         this.tracker = tracker;
         this.config = config;
     }
@@ -38,8 +37,7 @@ public sealed class PartyListOverlay : IDisposable
         if (!config.IsOverlayVisible) return;
 
         var addonWrapper = gameGui.GetAddonByName("_PartyList");
-        if (addonWrapper.IsNull) return;
-        if (!addonWrapper.IsVisible) return;
+        if (addonWrapper.IsNull || !addonWrapper.IsVisible) return;
 
         var addon = (AtkUnitBase*)addonWrapper.Address;
         var scale = addonWrapper.Scale;
@@ -63,20 +61,29 @@ public sealed class PartyListOverlay : IDisposable
             return;
         }
 
+        var agentHud = AgentHUD.Instance();
+        if (agentHud == null)
+        {
+            ImGui.End();
+            return;
+        }
+
         var drawList = ImGui.GetWindowDrawList();
 
-        for (var i = 0; i < MemberNodeIndices.Length && i < partyList.Length; i++)
+        foreach (var member in agentHud->PartyMembers)
         {
-            var member = partyList[i];
-            if (member == null) continue;
+            // Skip empty slots
+            if (member.EntityId is 0 or 0xE0000000) continue;
             if (!tracker.TryGetCount(member.EntityId, out var count)) continue;
 
-            var slotNodeIndex = MemberNodeIndices[i];
-            if (slotNodeIndex >= addon->UldManager.NodeListCount) continue;
+            var slotIndex = (int)member.Index;
+            if (slotIndex >= MemberNodeIndices.Length) continue;
 
-            var slotNode = addon->UldManager.NodeList[slotNodeIndex];
-            if (slotNode == null) continue;
-            if (slotNode->Type < NodeType.Component) continue; // must be a component node before casting
+            var nodeIndex = MemberNodeIndices[slotIndex];
+            if (nodeIndex >= addon->UldManager.NodeListCount) continue;
+
+            var slotNode = addon->UldManager.NodeList[nodeIndex];
+            if (slotNode == null || slotNode->Type < NodeType.Component) continue;
 
             var componentNode = (AtkComponentNode*)slotNode;
             var component = componentNode->Component;
@@ -86,8 +93,6 @@ public sealed class PartyListOverlay : IDisposable
             var jobIconNode = component->UldManager.NodeList[JobIconChildIndex];
             if (jobIconNode == null) continue;
 
-            // ScreenX/ScreenY on AtkResNode are updated each frame by the game engine
-            // and already account for all parent transforms and HUD scale.
             var nodeX = jobIconNode->ScreenX;
             var nodeY = jobIconNode->ScreenY;
 

@@ -10,7 +10,6 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
-    [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IGameInteropProvider GameInterop { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
@@ -29,8 +28,8 @@ public sealed class Plugin : IDalamudPlugin
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         tracker = new ProvokeTracker();
-        actionEffectHook = new ActionEffectHook(tracker, PartyList, GameInterop);
-        overlay = new PartyListOverlay(GameGui, PartyList, tracker, Configuration);
+        actionEffectHook = new ActionEffectHook(tracker, GameInterop);
+        overlay = new PartyListOverlay(GameGui, tracker, Configuration);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {

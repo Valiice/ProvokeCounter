@@ -13,18 +13,14 @@ public sealed class ActionEffectHook : IDisposable
 
     private readonly Hook<ActionEffectHandler.Delegates.Receive> hook;
     private readonly ProvokeTracker tracker;
-    private readonly IPartyList partyList;
 
-    public unsafe ActionEffectHook(ProvokeTracker tracker, IPartyList partyList, IGameInteropProvider gameInterop)
+    public unsafe ActionEffectHook(ProvokeTracker tracker, IGameInteropProvider gameInterop)
     {
         this.tracker = tracker;
-        this.partyList = partyList;
-
-        var address = ActionEffectHandler.Addresses.Receive.Value;
-        Plugin.Log.Information($"[ProvokeCounter] Hooking ReceiveActionEffect at 0x{address:X}");
 
         hook = gameInterop.HookFromAddress<ActionEffectHandler.Delegates.Receive>(
-            address, OnReceiveActionEffect);
+            ActionEffectHandler.Addresses.Receive.Value,
+            OnReceiveActionEffect);
         hook.Enable();
 
         Plugin.Log.Information("[ProvokeCounter] ActionEffectHook enabled.");
@@ -40,24 +36,10 @@ public sealed class ActionEffectHook : IDisposable
     {
         hook.Original(casterEntityId, caster, targetPos, header, effects, targetEntityIds);
 
-        Plugin.Log.Debug($"[ProvokeCounter] Hook fired: action {header->ActionId} from {casterEntityId}");
-
         if (header->ActionId != ProvokeActionId) return;
 
-        Plugin.Log.Information($"[ProvokeCounter] Provoke detected from entity {casterEntityId}");
-        Plugin.Log.Information($"[ProvokeCounter] Party members ({partyList.Length}): {string.Join(", ", System.Linq.Enumerable.Select(partyList, m => $"{m.Name}={m.EntityId}"))}");
-
-        foreach (var member in partyList)
-        {
-            if (member.EntityId == casterEntityId)
-            {
-                tracker.Increment(casterEntityId);
-                Plugin.Log.Information($"[ProvokeCounter] Incremented count for {member.Name} -> {tracker.GetCount(casterEntityId)}");
-                return;
-            }
-        }
-
-        Plugin.Log.Warning($"[ProvokeCounter] Provoke from {casterEntityId} but no matching party member found!");
+        tracker.Increment(casterEntityId);
+        Plugin.Log.Debug($"[ProvokeCounter] Provoke from {casterEntityId}, count: {tracker.GetCount(casterEntityId)}");
     }
 
     public void Dispose()
