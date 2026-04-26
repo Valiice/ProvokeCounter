@@ -38,16 +38,27 @@ public sealed class ActionEffectHook : IDisposable
     {
         hook.Original(casterEntityId, caster, targetPos, header, effects, targetEntityIds);
 
-        if (header->ActionId != ProvokeActionId) return;
+        if (header->ActionId != ProvokeActionId)
+        {
+            // Uncomment to log ALL incoming actions for debugging:
+            // Plugin.Log.Debug($"[ProvokeCounter] Action {header->ActionId} from {casterEntityId}");
+            return;
+        }
+
+        Plugin.Log.Information($"[ProvokeCounter] Provoke detected from entity {casterEntityId}");
+        Plugin.Log.Information($"[ProvokeCounter] Party members ({partyList.Length}): {string.Join(", ", System.Linq.Enumerable.Select(partyList, m => $"{m.Name}={m.EntityId}"))}");
 
         foreach (var member in partyList)
         {
             if (member.EntityId == casterEntityId)
             {
                 tracker.Increment(casterEntityId);
+                Plugin.Log.Information($"[ProvokeCounter] Incremented count for {member.Name} -> {tracker.GetCount(casterEntityId)}");
                 return;
             }
         }
+
+        Plugin.Log.Warning($"[ProvokeCounter] Provoke from {casterEntityId} but no matching party member found!");
     }
 
     public void Dispose()
