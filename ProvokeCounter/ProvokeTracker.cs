@@ -20,5 +20,7 @@ public sealed class ProvokeTracker
     public bool TryGetCount(uint objectId, out int count) =>
         counts.TryGetValue(objectId, out count);
 
+    public IReadOnlyDictionary<uint, int> GetAllCounts() => counts;
+
     public void Reset() => counts.Clear();
 }
