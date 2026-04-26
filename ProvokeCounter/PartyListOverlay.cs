@@ -72,7 +72,7 @@ public sealed class PartyListOverlay : IDisposable
 
         // Log node structure once so we can verify indices (remove after debugging)
         Plugin.Log.Debug($"[ProvokeCounter] _PartyList total nodes: {addon->UldManager.NodeListCount}");
-        for (var n = 0; n < System.Math.Min(addon->UldManager.NodeListCount, 20); n++)
+        for (var n = 0; n < System.Math.Min((int)addon->UldManager.NodeListCount, 20); n++)
         {
             var nd = addon->UldManager.NodeList[n];
             if (nd != null)
