@@ -11,7 +11,7 @@ public sealed class PartyListOverlay : IDisposable
 {
     // Component node indices within _PartyList for each UI slot (slot 0 = top).
     // Verify with /xldev -> Addon Inspector -> _PartyList if badges appear at wrong positions.
-    private static readonly int[] MemberNodeIndices = [4, 5, 6, 7, 8, 9, 10, 11];
+    private static readonly int[] MemberNodeIndices = [7, 8, 9, 10, 11, 12, 13, 14];
 
     // Child node index of the job icon image node within each member's component node.
     // Verify with /xldev -> Addon Inspector -> _PartyList -> expand a member component node.
@@ -24,6 +24,7 @@ public sealed class PartyListOverlay : IDisposable
     private readonly IGameGui gameGui;
     private readonly ProvokeTracker tracker;
     private readonly Configuration config;
+    private bool hasLoggedNodes;
 
     public PartyListOverlay(IGameGui gameGui, ProvokeTracker tracker, Configuration config)
     {
@@ -70,22 +71,38 @@ public sealed class PartyListOverlay : IDisposable
 
         var drawList = ImGui.GetWindowDrawList();
 
-        // Log node structure once so we can verify indices (remove after debugging)
-        Plugin.Log.Debug($"[ProvokeCounter] _PartyList total nodes: {addon->UldManager.NodeListCount}");
-        for (var n = 0; n < System.Math.Min((int)addon->UldManager.NodeListCount, 20); n++)
+        if (!hasLoggedNodes)
         {
-            var nd = addon->UldManager.NodeList[n];
-            if (nd != null)
-                Plugin.Log.Debug($"[ProvokeCounter]   node[{n}] type={(int)nd->Type} id={nd->NodeId}");
+            hasLoggedNodes = true;
+            Plugin.Log.Information($"[ProvokeCounter] _PartyList total nodes: {addon->UldManager.NodeListCount}");
+            for (var n = 0; n < System.Math.Min((int)addon->UldManager.NodeListCount, 20); n++)
+            {
+                var nd = addon->UldManager.NodeList[n];
+                if (nd != null)
+                    Plugin.Log.Information($"[ProvokeCounter]   node[{n}] type={(int)nd->Type} id={nd->NodeId}");
+            }
+            // Log children of node[7] (first member slot) to find job icon child index
+            var slot0 = addon->UldManager.NodeList[7];
+            if (slot0 != null && slot0->Type >= NodeType.Component)
+            {
+                var comp0 = ((AtkComponentNode*)slot0)->Component;
+                if (comp0 != null)
+                {
+                    Plugin.Log.Information($"[ProvokeCounter] node[7] children: {comp0->UldManager.NodeListCount}");
+                    for (var c = 0; c < comp0->UldManager.NodeListCount; c++)
+                    {
+                        var cn = comp0->UldManager.NodeList[c];
+                        if (cn != null)
+                            Plugin.Log.Information($"[ProvokeCounter]   child[{c}] type={(int)cn->Type} id={cn->NodeId}");
+                    }
+                }
+            }
         }
 
         foreach (var member in agentHud->PartyMembers)
         {
             // Skip empty slots
             if (member.EntityId is 0 or 0xE0000000) continue;
-
-            Plugin.Log.Debug($"[ProvokeCounter] AgentHUD member: EntityId={member.EntityId} Index={member.Index}");
-
             if (!tracker.TryGetCount(member.EntityId, out var count)) continue;
 
             var slotIndex = (int)member.Index;
