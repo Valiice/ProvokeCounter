@@ -2,7 +2,6 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace ProvokeCounter;
@@ -77,6 +76,7 @@ public sealed class PartyListOverlay : IDisposable
 
             var slotNode = addon->UldManager.NodeList[slotNodeIndex];
             if (slotNode == null) continue;
+            if (slotNode->Type < NodeType.Component) continue; // must be a component node before casting
 
             var componentNode = (AtkComponentNode*)slotNode;
             var component = componentNode->Component;
