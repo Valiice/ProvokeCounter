@@ -2,19 +2,13 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace ProvokeCounter;
 
 public sealed class PartyListOverlay : IDisposable
 {
-    // Component node indices within _PartyList for each UI slot (slot 0 = top).
-    private static readonly int[] MemberNodeIndices = [7, 8, 9, 10, 11, 12, 13, 14];
-
-    // Child node index of the job icon image node within each member's component node.
-    private const int JobIconChildIndex = 15;
-
     // ImGui colors in ABGR format
     private const uint BadgeBorderColor = 0xFF12A1F3; // orange #F3A112, fully opaque
     private const uint BadgeTextColor   = 0xFFFFFFFF; // white, fully opaque
@@ -22,7 +16,6 @@ public sealed class PartyListOverlay : IDisposable
     private readonly IGameGui gameGui;
     private readonly ProvokeTracker tracker;
     private readonly Configuration config;
-    private bool hasLoggedNodes;
 
     public PartyListOverlay(IGameGui gameGui, ProvokeTracker tracker, Configuration config)
     {
@@ -38,8 +31,12 @@ public sealed class PartyListOverlay : IDisposable
         var addonWrapper = gameGui.GetAddonByName("_PartyList");
         if (addonWrapper.IsNull || !addonWrapper.IsVisible) return;
 
-        var addon = (AtkUnitBase*)addonWrapper.Address;
+        var agentHud = AgentHUD.Instance();
+        if (agentHud == null) return;
+
+        var addon = (AddonPartyList*)addonWrapper.Address;
         var scale = addonWrapper.Scale;
+        var partyMembers = addon->PartyMembers;
 
         ImGui.SetNextWindowPos(Vector2.Zero);
         ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
@@ -60,34 +57,6 @@ public sealed class PartyListOverlay : IDisposable
             return;
         }
 
-        var agentHud = AgentHUD.Instance();
-        if (agentHud == null)
-        {
-            ImGui.End();
-            return;
-        }
-
-        // Log node structure once on first draw so we can verify indices via /xllog
-        if (!hasLoggedNodes)
-        {
-            hasLoggedNodes = true;
-            var slot0 = addon->UldManager.NodeList[7];
-            if (slot0 != null && slot0->Type >= NodeType.Component)
-            {
-                var comp0 = ((AtkComponentNode*)slot0)->Component;
-                if (comp0 != null)
-                {
-                    Plugin.Log.Information($"[ProvokeCounter] node[7] has {comp0->UldManager.NodeListCount} children:");
-                    for (var c = 0; c < comp0->UldManager.NodeListCount; c++)
-                    {
-                        var cn = comp0->UldManager.NodeList[c];
-                        if (cn != null)
-                            Plugin.Log.Information($"[ProvokeCounter]   child[{c}] type={(int)cn->Type} id={cn->NodeId}");
-                    }
-                }
-            }
-        }
-
         var drawList = ImGui.GetWindowDrawList();
 
         foreach (var member in agentHud->PartyMembers)
@@ -96,24 +65,14 @@ public sealed class PartyListOverlay : IDisposable
             if (!tracker.TryGetCount(member.EntityId, out var count)) continue;
 
             var slotIndex = (int)member.Index;
-            if (slotIndex >= MemberNodeIndices.Length) continue;
+            if (slotIndex >= partyMembers.Length) continue;
 
-            var nodeIndex = MemberNodeIndices[slotIndex];
-            if (nodeIndex >= addon->UldManager.NodeListCount) continue;
+            var jobIcon = partyMembers[slotIndex].ClassJobIcon;
+            if (jobIcon == null) continue;
 
-            var slotNode = addon->UldManager.NodeList[nodeIndex];
-            if (slotNode == null || slotNode->Type < NodeType.Component) continue;
-
-            var componentNode = (AtkComponentNode*)slotNode;
-            var component = componentNode->Component;
-            if (component == null) continue;
-
-            if (JobIconChildIndex >= component->UldManager.NodeListCount) continue;
-            var jobIconNode = component->UldManager.NodeList[JobIconChildIndex];
-            if (jobIconNode == null) continue;
-
-            var nodeX = jobIconNode->ScreenX;
-            var nodeY = jobIconNode->ScreenY;
+            var nodeX = jobIcon->ScreenX;
+            var nodeY = jobIcon->ScreenY;
+            if (nodeX == 0 && nodeY == 0) continue;
 
             var badgeText = count.ToString();
             var textSize = ImGui.CalcTextSize(badgeText);
