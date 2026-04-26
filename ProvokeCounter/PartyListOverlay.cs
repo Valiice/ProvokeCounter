@@ -70,13 +70,26 @@ public sealed class PartyListOverlay : IDisposable
 
         var drawList = ImGui.GetWindowDrawList();
 
+        // Log node structure once so we can verify indices (remove after debugging)
+        Plugin.Log.Debug($"[ProvokeCounter] _PartyList total nodes: {addon->UldManager.NodeListCount}");
+        for (var n = 0; n < System.Math.Min(addon->UldManager.NodeListCount, 20); n++)
+        {
+            var nd = addon->UldManager.NodeList[n];
+            if (nd != null)
+                Plugin.Log.Debug($"[ProvokeCounter]   node[{n}] type={(int)nd->Type} id={nd->NodeId}");
+        }
+
         foreach (var member in agentHud->PartyMembers)
         {
             // Skip empty slots
             if (member.EntityId is 0 or 0xE0000000) continue;
+
+            Plugin.Log.Debug($"[ProvokeCounter] AgentHUD member: EntityId={member.EntityId} Index={member.Index}");
+
             if (!tracker.TryGetCount(member.EntityId, out var count)) continue;
 
             var slotIndex = (int)member.Index;
+            Plugin.Log.Debug($"[ProvokeCounter] Drawing badge for slot {slotIndex}, nodeIndex={MemberNodeIndices[slotIndex]}, count={count}");
             if (slotIndex >= MemberNodeIndices.Length) continue;
 
             var nodeIndex = MemberNodeIndices[slotIndex];
