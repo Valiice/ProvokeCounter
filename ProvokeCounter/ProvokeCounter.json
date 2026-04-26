@@ -1,0 +1,8 @@
+{
+  "Author": "Valiice",
+  "Name": "ProvokeCounter",
+  "Punchline": "Counts how many times tanks provoke in your party.",
+  "Description": "Displays a counter badge on the party list for each party member who uses Provoke. Resets per zone. Toggle with /provokecounter, reset with /provokecounter reset.",
+  "ApplicableVersion": "any",
+  "Tags": ["party", "tank", "provoke", "counter", "fun"]
+}
