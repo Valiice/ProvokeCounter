@@ -38,12 +38,16 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         PluginInterface.UiBuilder.Draw += overlay.Draw;
+        PluginInterface.UiBuilder.OpenConfigUi += ToggleOverlay;
+        PluginInterface.UiBuilder.OpenMainUi += ToggleOverlay;
         ClientState.TerritoryChanged += OnTerritoryChanged;
     }
 
     public void Dispose()
     {
         ClientState.TerritoryChanged -= OnTerritoryChanged;
+        PluginInterface.UiBuilder.OpenMainUi -= ToggleOverlay;
+        PluginInterface.UiBuilder.OpenConfigUi -= ToggleOverlay;
         PluginInterface.UiBuilder.Draw -= overlay.Draw;
         CommandManager.RemoveHandler(CommandName);
         actionEffectHook.Dispose();
@@ -64,6 +68,12 @@ public sealed class Plugin : IDalamudPlugin
         ChatGui.Print(Configuration.IsOverlayVisible
             ? "[ProvokeCounter] Overlay shown."
             : "[ProvokeCounter] Overlay hidden.");
+    }
+
+    private void ToggleOverlay()
+    {
+        Configuration.IsOverlayVisible = !Configuration.IsOverlayVisible;
+        Configuration.Save();
     }
 
     private void OnTerritoryChanged(ushort _) => tracker.Reset();
