@@ -98,7 +98,7 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    private void OnTerritoryChanged(ushort _)
+    private void OnTerritoryChanged(uint _)
     {
         allTimeStats.Merge(tracker.GetAllCounts());
         allTimeStats.ClearNameCache();
