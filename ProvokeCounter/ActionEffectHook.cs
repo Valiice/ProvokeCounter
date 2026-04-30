@@ -34,10 +34,9 @@ public sealed class ActionEffectHook : IDisposable
         ActionEffectHandler.TargetEffects* effects,
         GameObjectId* targetEntityIds)
     {
+        var actionId = header->ActionId;
         hook.Original(casterEntityId, caster, targetPos, header, effects, targetEntityIds);
-
-        if (header->ActionId != ProvokeActionId) return;
-
+        if (actionId != ProvokeActionId) return;
         tracker.Increment(casterEntityId);
     }
 
