@@ -5,6 +5,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace ProvokeCounter;
@@ -91,11 +92,31 @@ public sealed class Plugin : IDalamudPlugin
         foreach (var member in agentHud->PartyMembers)
         {
             if (member.EntityId is 0 or 0xE0000000) continue;
-            if (allTimeStats.HasCachedName(member.EntityId)) continue;
-            var obj = ObjectTable.FirstOrDefault(o => o?.EntityId == member.EntityId);
-            if (obj != null)
-                allTimeStats.TryCacheName(member.EntityId, obj.Name.ToString());
+            TryCacheEntityName(member.EntityId);
         }
+
+        var groupManager = GroupManager.Instance();
+        if (groupManager == null) return;
+        var group = groupManager->GetGroup();
+        if (group == null) return;
+        for (var g = 0; g < 2; g++)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                var member = group->GetAllianceMemberByGroupAndIndex(g, i);
+                if (member == null) continue;
+                if (member->EntityId is 0 or 0xE0000000) continue;
+                TryCacheEntityName(member->EntityId);
+            }
+        }
+    }
+
+    private void TryCacheEntityName(uint entityId)
+    {
+        if (allTimeStats.HasCachedName(entityId)) return;
+        var obj = ObjectTable.FirstOrDefault(o => o?.EntityId == entityId);
+        if (obj != null)
+            allTimeStats.TryCacheName(entityId, obj.Name.ToString());
     }
 
     private void OnTerritoryChanged(uint _)

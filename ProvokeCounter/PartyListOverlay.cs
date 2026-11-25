@@ -86,7 +86,49 @@ public sealed class PartyListOverlay : IDisposable
             drawList.AddText(badgePos + padding, BadgeTextColor, badgeText);
         }
 
+        DrawAllianceBadges(drawList, "_AllianceList1", 0);
+        DrawAllianceBadges(drawList, "_AllianceList2", 1);
+
         ImGui.End();
+    }
+
+    private unsafe void DrawAllianceBadges(ImDrawListPtr drawList, string addonName, int allianceGroup)
+    {
+        var addonWrapper = gameGui.GetAddonByName(addonName);
+        if (addonWrapper.IsNull || !addonWrapper.IsVisible) return;
+
+        var addon = (AddonAllianceListX*)addonWrapper.Address;
+        var scale = addonWrapper.Scale;
+
+        var agentHud = AgentHUD.Instance();
+        if (agentHud == null) return;
+
+        var slotCount = Math.Min((int)addon->SlotsFilled, addon->AllianceMembers.Length);
+        for (var i = 0; i < slotCount; i++)
+        {
+            // RaidMemberIds is in displayed order (8 per alliance list); GroupManager's order is not.
+            var entityId = agentHud->RaidMemberIds[allianceGroup * 8 + i];
+            if (entityId is 0 or 0xE0000000) continue;
+            if (!tracker.TryGetCount(entityId, out var count)) continue;
+
+            var jobIcon = addon->AllianceMembers[i].ClassJobImageNode;
+            if (jobIcon == null) continue;
+
+            var nodeX = jobIcon->ScreenX;
+            var nodeY = jobIcon->ScreenY;
+            if (nodeX == 0 && nodeY == 0) continue;
+
+            var badgeText = count.ToString();
+            var textSize = ImGui.CalcTextSize(badgeText);
+            var padding = new Vector2(3f * scale, 1f * scale);
+            var badgeSize = textSize + padding * 2f;
+
+            var badgePos = new Vector2(nodeX - badgeSize.X - 2f * scale, nodeY);
+            var badgeEnd = badgePos + badgeSize;
+
+            drawList.AddRect(badgePos, badgeEnd, BadgeBorderColor, 2f);
+            drawList.AddText(badgePos + padding, BadgeTextColor, badgeText);
+        }
     }
 
     public void Dispose() { }
